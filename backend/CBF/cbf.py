@@ -48,28 +48,19 @@ def create_user_profile(df_users, mlb, user_id):
     return user_profile
 
 
-# 4. Funzione per calcolare la similarità e generare raccomandazioni
-"""
-def calculate_similarity(users_with_genres_profile, books_with_genres_profile):
-    user_genres_matrix = users_with_genres_profile.drop(columns=['id', 'age']).values
-    book_genres_matrix = books_with_genres_profile.drop(columns=['bookId', 'title']).values
-    similarity_matrix = cosine_similarity(user_genres_matrix, book_genres_matrix)
-    similarity_df = pd.DataFrame(similarity_matrix, index=users_with_genres_profile['id'], columns=books_with_genres_profile['title'])
-    return similarity_df
 
-def get_top_recommendations(similarity_df, top_n=2):
-    recommendations = {}
-    for user_id in similarity_df.index:
-        top_books = similarity_df.loc[user_id].sort_values(ascending=False).head(top_n)
-        recommendations[user_id] = list(top_books.index)  # Get book titles
-    return recommendations"""
-
-# 4. Funzione per calcolare la similarità e generare raccomandazioni per un singolo utente
-def calculate_similarity_for_user(user_profile, books_with_genres_profile):
+# 4. Funzione per calcolare la similarità escludendo i libri già letti
+def calculate_similarity_for_user(user_profile, books_with_genres_profile, df_visualizations, user_id):
+    # Filtra i libri già letti dall'utente
+    books_read_by_user = df_visualizations[df_visualizations['userId'] == user_id]['bookId'].tolist()
+    books_not_read = books_with_genres_profile[~books_with_genres_profile['bookId'].isin(books_read_by_user)]
+    
+    # Calcola la similarità solo con i libri non letti
     user_genres_vector = user_profile.drop(['id', 'age']).values.reshape(1, -1)
-    book_genres_matrix = books_with_genres_profile.drop(columns=['bookId', 'title']).values
+    book_genres_matrix = books_not_read.drop(columns=['bookId', 'title']).values
     similarity_scores = cosine_similarity(user_genres_vector, book_genres_matrix).flatten()
-    similarity_series = pd.Series(similarity_scores, index=books_with_genres_profile['title'])
+    similarity_series = pd.Series(similarity_scores, index=books_not_read['title'])
+    
     return similarity_series
 
 def get_top_recommendations_for_user(similarity_series, top_n=2):
@@ -82,7 +73,7 @@ def main(user_id=None):
     df_book, df_users, df_visualizations = load_data()
     
     # Crea i profili dei libri e degli utenti
-    books_with_genres_profile, mlb = create_book_profiles(df_book)
+    books_with_genres_profile, mlb = create_book_profiles(df_book) 
     #users_with_genres_profile = create_user_profile(df_users, mlb)
     users_with_genres_profile = create_user_profile(df_users, mlb,user_id)
     
@@ -95,7 +86,7 @@ def main(user_id=None):
             return
         
         # Calcola la similarità per l'utente specifico e ottieni le raccomandazioni
-        similarity_series = calculate_similarity_for_user(user_profile.iloc[0], books_with_genres_profile)
+        similarity_series = calculate_similarity_for_user(user_profile.iloc[0], books_with_genres_profile, df_visualizations, user_id)
         recommendations = get_top_recommendations_for_user(similarity_series, top_n=3)
         
         # Stampa le raccomandazioni per l'utente specifico
