@@ -26,7 +26,7 @@ def create_user_item_matrix(df_ratings, df_book):
     
     # Pivot la tabella per avere gli utenti come righe e i libri come colonne
     user_item_matrix = all_ratings.pivot(index='userId', columns='bookId', values='rating')
-    print(user_item_matrix)
+    #print(user_item_matrix)
     return user_item_matrix
 
 # 3. Funzione per calcolare la similarità tra utenti
@@ -38,18 +38,19 @@ def calculate_user_similarity(user_item_matrix):
     user_similarity_df = pd.DataFrame(user_similarity, index=user_item_matrix.index, columns=user_item_matrix.index)
     return user_similarity_df
 
-# 4. Funzione per generare raccomandazioni per un singolo utente
-def get_user_based_recommendations(user_id, user_item_matrix, user_similarity_df, top_n=5):
+def get_user_based_recommendations(user_id, user_item_matrix, user_similarity_df, df_visualizations, top_n=5):
     # Trova gli utenti simili
     similar_users = user_similarity_df[user_id].sort_values(ascending=False).drop(user_id)
     
-    # Prendi i libri non valutati dall'utente
-    user_ratings = user_item_matrix.loc[user_id]
-    books_not_rated = user_ratings[user_ratings.isna()].index
+    # Trova i libri già letti dall'utente utilizzando df_visualizations
+    books_read_by_user = df_visualizations[df_visualizations['userId'] == user_id]['bookId'].unique()
     
-    # Calcola un punteggio ponderato per ciascun libro non valutato dall'utente
+    # Prendi i libri che non sono stati letti dall'utente
+    books_to_recommend = [book for book in user_item_matrix.columns if book not in books_read_by_user]
+    
+    # Calcola un punteggio ponderato per ciascun libro non letto dall'utente
     recommendations = {}
-    for book in books_not_rated:
+    for book in books_to_recommend:
         # Filtra le valutazioni per il libro corrente e per gli utenti simili
         similar_users_ratings = user_item_matrix.loc[similar_users.index, book]
         
@@ -81,7 +82,7 @@ def main(user_id=None):
     
     if user_id is not None:
         # Genera le raccomandazioni per l'utente specificato
-        recommendations = get_user_based_recommendations(user_id, user_item_matrix, user_similarity_df, top_n=3)
+        recommendations = get_user_based_recommendations(user_id, user_item_matrix, user_similarity_df, df_visualizations, top_n=3)
         print(f"Recommended books for user {user_id}: {recommendations}")
     else:
         print("Please provide a valid user_id.")
