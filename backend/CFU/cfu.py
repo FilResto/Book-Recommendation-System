@@ -12,10 +12,21 @@ def load_data():
         df_ratings = pickle.load(file)
     return df_book, df_ratings, df_visualizations
 
-# 2. Funzione per creare la matrice utente-libro
-def create_user_item_matrix(df_ratings):
+# 2. Funzione per creare la matrice utente-libro con tutte le combinazioni
+def create_user_item_matrix(df_ratings, df_book):
+    # Estrai tutti gli utenti e tutti i libri
+    all_users = df_ratings['userId'].unique()
+    all_books = df_book['bookId'].unique()
+    
+    # Crea un DataFrame con tutte le combinazioni di utenti e libri
+    all_combinations = pd.DataFrame([(user, book) for user in all_users for book in all_books], columns=['userId', 'bookId'])
+    
+    # Unisci il dataframe delle valutazioni con tutte le combinazioni
+    all_ratings = all_combinations.merge(df_ratings, on=['userId', 'bookId'], how='left')
+    
     # Pivot la tabella per avere gli utenti come righe e i libri come colonne
-    user_item_matrix = df_ratings.pivot(index='userId', columns='bookId', values='rating')
+    user_item_matrix = all_ratings.pivot(index='userId', columns='bookId', values='rating')
+    print(user_item_matrix)
     return user_item_matrix
 
 # 3. Funzione per calcolare la similarità tra utenti
@@ -63,7 +74,7 @@ def main(user_id=None):
     df_book, df_ratings, df_visualizations = load_data()
     
     # Crea la matrice utente-libro
-    user_item_matrix = create_user_item_matrix(df_ratings)
+    user_item_matrix = create_user_item_matrix(df_ratings, df_book)
     
     # Calcola la similarità tra utenti
     user_similarity_df = calculate_user_similarity(user_item_matrix)
