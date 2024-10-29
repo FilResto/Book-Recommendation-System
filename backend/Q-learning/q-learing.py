@@ -10,4 +10,6 @@ def load_data():
         df_visualizations = pickle.load(file)
     with open("../data/df_ratings.pkl", "rb") as file:
         df_ratings = pickle.load(file)
-    return df_book, df_ratings, df_visualizations
+    with open("../data/df_user.pkl", "rb") as file:
+        df_users = pickle.load(file)
+    return df_book, df_ratings, df_visualizations,df_users
