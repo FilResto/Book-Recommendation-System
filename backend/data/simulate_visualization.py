@@ -5,9 +5,9 @@ import numpy as np
 
 def create_visual():
     # Caricamento dei file pickle
-    with open('df_book.pkl', 'rb') as file:
+    with open('df_book_filtered.pkl', 'rb') as file:
         df_book = pickle.load(file)
-    with open("df_user.pkl", "rb") as file:
+    with open("df_user_filtered.pkl", "rb") as file:
         df_users = pickle.load(file)
 
     prob_pref = 0.7
