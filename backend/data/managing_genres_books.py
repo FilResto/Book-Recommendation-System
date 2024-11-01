@@ -13,7 +13,7 @@ def assign_random_genres():
 
     # Conta la frequenza di ciascun genere e crea una lista dei top 50 generi
     genre_counts = Counter(df_books_exploded['genres'])
-    top_50_genres = [genre for genre, _ in genre_counts.most_common(50)]
+    top_50_genres = [genre for genre, _ in genre_counts.most_common(100)]
 
     # Carica il DataFrame degli utenti
     with open('df_user.pkl', 'rb') as file:
