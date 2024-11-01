@@ -21,7 +21,7 @@ def assign_random_genres():
 
     # Funzione per assegnare 2 generi casuali a ciascun utente
     def assign_random_preferred_genres(_):
-        return random.sample(top_50_genres, 2)
+        return random.sample(top_50_genres, 3)
 
     # Cancella i generi preferiti esistenti e assegna 3 generi casuali dalla lista top_50
     df_users['generi_preferiti'] = df_users['generi_preferiti'].apply(assign_random_preferred_genres)
@@ -30,10 +30,7 @@ def assign_random_genres():
     with open('df_user_randomized.pkl', 'wb') as file:
         pickle.dump(df_users, file)
 
-    # Stampa i risultati per verificare
-    print("Numero di generi preferiti unici negli utenti dopo l'assegnazione:", len(df_users.explode('generi_preferiti')['generi_preferiti'].unique()))
-    print("Anteprima del DataFrame utenti aggiornato:")
-    print(df_users)
+
 
 # Esegui la funzione
 assign_random_genres()

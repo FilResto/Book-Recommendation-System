@@ -7,7 +7,7 @@ def create_visual():
     # Caricamento dei file pickle
     with open('df_book_filtered.pkl', 'rb') as file:
         df_book = pickle.load(file)
-    with open("df_user_filtered.pkl", "rb") as file:
+    with open("df_user_randomized.pkl", "rb") as file:
         df_users = pickle.load(file)
 
     prob_pref = 0.7
@@ -34,6 +34,7 @@ def simulate_views(users, books, prob_preferiti, prob_altri, num_views):
         libri_preferiti = books[books['genres'].apply(lambda g: any(genre in user_generi_preferiti for genre in g))].copy()
 
         if len(libri_preferiti) == 0:
+            print(user_generi_preferiti)
             print(f"Nessun libro trovato per i generi preferiti dell'utente {user['id']}.")
             continue
 
