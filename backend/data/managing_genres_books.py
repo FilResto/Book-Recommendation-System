@@ -2,7 +2,7 @@ import pickle
 import pandas as pd
 from collections import Counter
 
-# Carica il DataFrame dal file .pkl
+# Carica il DataFrame dei libri
 with open('df_book.pkl', 'rb') as file:
     df_books = pickle.load(file)
 
@@ -13,27 +13,38 @@ df_books_exploded = df_books.explode('genres')
 genre_counts = Counter(df_books_exploded['genres'])
 top_100_genres = [genre for genre, _ in genre_counts.most_common(100)]
 
-# Funzione per filtrare i generi di un libro mantenendo solo quelli presenti nella top 100
+# Funzione per filtrare i generi di un libro e un utente mantenendo solo quelli presenti nella top 100
 def filter_genres(genres):
     return [genre for genre in genres if genre in top_100_genres]
 
-# Applica la funzione di filtro alla colonna 'genres' del DataFrame originale
+# Applica la funzione di filtro alla colonna 'genres' del DataFrame dei libri
 df_books['genres'] = df_books['genres'].apply(filter_genres)
 
-# Salva il DataFrame aggiornato nel file .pkl
+# Stampa la lista dei generi unici nei libri prima e dopo il filtraggio
+unique_genres_books_before = df_books_exploded['genres'].unique()
+
+unique_genres_books_after = df_books.explode('genres')['genres'].unique()
+
+# Salva il DataFrame dei libri aggiornato
 with open('df_book_filtered.pkl', 'wb') as file:
     pickle.dump(df_books, file)
 
-# Explode la colonna 'genres' per ottenere una lista dei generi unici
-unique_genres = df_books.explode('genres')['genres'].unique()
+# Carica il DataFrame degli utenti
+with open('df_user.pkl', 'rb') as file:
+    df_users = pickle.load(file)
 
-# Stampa la lista dei generi unici
-#print("Lista dei generi unici nel DataFrame aggiornato:", unique_genres)
+# Stampa la lista dei generi unici preferiti dagli utenti prima del filtraggio
+unique_genres_users_before = df_users.explode('generi_preferiti')['generi_preferiti'].unique()
+print("Numero di generi preferiti unici negli utenti prima del filtraggio:", len(unique_genres_users_before))
 
-# Stampa il numero di generi unici
-#print("Numero unico di generi nel DataFrame aggiornato:", len(unique_genres))
+# Applica la funzione di filtro alla colonna 'generi_preferiti' del DataFrame degli utenti
+df_users['generi_preferiti'] = df_users['generi_preferiti'].apply(filter_genres)
 
-# Stampa l'head del DataFrame aggiornato
-#print(df_books.head())
+# Stampa la lista dei generi unici preferiti dagli utenti dopo il filtraggio
+unique_genres_users_after = df_users.explode('generi_preferiti')['generi_preferiti'].unique()
+print("Numero di generi preferiti unici negli utenti dopo il filtraggio:", len(unique_genres_users_after))
 
+# Salva il DataFrame degli utenti aggiornato
+with open('df_user_filtered.pkl', 'wb') as file:
+    pickle.dump(df_users, file)
 
