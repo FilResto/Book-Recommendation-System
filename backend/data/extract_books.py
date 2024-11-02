@@ -22,7 +22,7 @@ def extract_userbook():
     for column in columns_to_check:
         df_filtered = df_filtered[df_filtered[column] != '']
     with open('df_english_books.pkl', 'wb') as file:
-        pickle.dump(df, file)
+        pickle.dump(df_filtered, file)
 
 
 
