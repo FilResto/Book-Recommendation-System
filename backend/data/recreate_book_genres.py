@@ -26,7 +26,7 @@ genres = [genre for genre, _ in genre_counts.most_common(50)]
 df_books['description'] = df_books['description'].fillna("")
 # Numero di righe per intervallo
 step_size = 256
-for i in range(256, len(df_books), step_size):
+for i in range(0, len(df_books), step_size):
     inizio = time.time()
     end_idx = min(i + step_size, len(df_books))
     
