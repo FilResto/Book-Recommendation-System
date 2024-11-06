@@ -5,9 +5,9 @@ import numpy as np
 
 def create_visual():
     # Caricamento dei file pickle
-    with open('df_book.pkl', 'rb') as file:
+    with open('PICKLE/df_book.pkl', 'rb') as file:
         df_book = pickle.load(file)
-    with open("df_user.pkl", "rb") as file:
+    with open("PICKLE/df_user.pkl", "rb") as file:
         df_users = pickle.load(file)
 
     prob_pref = 0.7
@@ -18,7 +18,7 @@ def create_visual():
 
     simulations_df = add_random_date(simulations_df)
 
-    simulations_df.to_csv('visualization.csv', index=False)
+    simulations_df.to_csv('CSV/visualization.csv', index=False)
 
 
 def simulate_views(users, books, prob_preferiti, prob_altri, num_views):

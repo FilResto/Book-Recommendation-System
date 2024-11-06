@@ -16,18 +16,18 @@ def stampa_npref():
 
 def create_ratings():
     # Caricamento dei file pickle
-    with open('df_visualization.pkl', 'rb') as file:
+    with open('PICKLE/df_visualization.pkl', 'rb') as file:
         df_readings = pickle.load(file)
-    with open('df_user.pkl', 'rb') as file:
+    with open('PICKLE/df_user.pkl', 'rb') as file:
         df_users = pickle.load(file)
-    with open('df_book.pkl', 'rb') as file:
+    with open('PICKLE/df_book.pkl', 'rb') as file:
         df_books = pickle.load(file)
     prob_review = 0.05
     simulate_ratings = generate_ratings(df_readings,prob_review,df_users,df_books)
 
     simulate_ratings = simulate_ratings.drop('reading_date',axis = 1)
     
-    simulate_ratings.to_csv('ratings.csv', index=False)
+    simulate_ratings.to_csv('CSV/ratings.csv', index=False)
 
 
 def generate_ratings(visualizations_df, prob_vote,df_users,df_books):
