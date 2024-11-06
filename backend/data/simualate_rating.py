@@ -18,9 +18,9 @@ def create_ratings():
     # Caricamento dei file pickle
     with open('df_visualization.pkl', 'rb') as file:
         df_readings = pickle.load(file)
-    with open('df_user_randomized.pkl', 'rb') as file:
+    with open('df_user.pkl', 'rb') as file:
         df_users = pickle.load(file)
-    with open('df_book_filtered.pkl', 'rb') as file:
+    with open('df_book.pkl', 'rb') as file:
         df_books = pickle.load(file)
     prob_review = 0.05
     simulate_ratings = generate_ratings(df_readings,prob_review,df_users,df_books)
@@ -53,8 +53,8 @@ def simualate_valuation(df_users, df_books, user_id, book_id):
     base_rating = book['rating'].iloc[0] - 1  # Abbassato per aumentare i voti bassi
 
     user_genres = (user['generi_preferiti'].iloc[0])
-    book_genres = (book['genres'].iloc[0])
-
+    book_genres = (book['new_genres'].iloc[0])
+    
     # Aumenta la variabilità per generare più voti estremi
     if set(user_genres).intersection(book_genres):
         rating = np.random.normal(loc=base_rating + 0.75, scale=0.75)  # Maggiore deviazione standard

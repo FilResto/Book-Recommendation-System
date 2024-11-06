@@ -2,15 +2,15 @@ import pandas as pd
 import pickle
 import ast
 def extract_userbook():
-    df = pd.read_csv('booksAll.csv',usecols=['bookId', 'title', 'series', 'author', 'description', 'language','publishDate', 'genres', 'pages', 'awards', 'rating', 'price'])
+    df = pd.read_csv('libri_def.csv',usecols=['bookId', 'title', 'series', 'author', 'description', 'language','publishDate', 'genres', 'pages', 'awards', 'rating', 'price','new_genres'])
     df['genres'] = df['genres'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+    df['new_genres'] = df['new_genres'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
 
-    with open('df_book.pkl', 'wb') as file:
-        pickle.dump(df, file)
+  
 
     columns_to_check = ['bookId', 'title', 'series', 'author', 'description', 
                     'language', 'publishDate', 'genres', 'pages', 
-                    'awards', 'rating', 'price']
+                    'awards', 'rating', 'price','new_genres']
 
     # Filtra solo i libri in lingua inglese
     df_filtered = df[df['language'] == 'English']
@@ -21,9 +21,10 @@ def extract_userbook():
     # Rimuovi le righe con stringhe vuote nelle colonne specificate
     for column in columns_to_check:
         df_filtered = df_filtered[df_filtered[column] != '']
-    with open('df_english_books.pkl', 'wb') as file:
-        pickle.dump(df_filtered, file)
 
+    print(df_filtered.columns)
+    with open('df_book.pkl', 'wb') as file:
+        pickle.dump(df_filtered, file)
 
 
 
@@ -39,3 +40,4 @@ def extract_ratings():
     df = pd.read_csv("ratings.csv")
     with open('df_ratings.pkl', 'wb') as file:
         pickle.dump(df, file)
+

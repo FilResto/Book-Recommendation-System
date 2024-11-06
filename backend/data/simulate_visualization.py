@@ -5,9 +5,9 @@ import numpy as np
 
 def create_visual():
     # Caricamento dei file pickle
-    with open('df_book_filtered.pkl', 'rb') as file:
+    with open('df_book.pkl', 'rb') as file:
         df_book = pickle.load(file)
-    with open("df_user_randomized.pkl", "rb") as file:
+    with open("df_user.pkl", "rb") as file:
         df_users = pickle.load(file)
 
     prob_pref = 0.7
@@ -22,7 +22,7 @@ def create_visual():
 
 
 def simulate_views(users, books, prob_preferiti, prob_altri, num_views):
-    books['genres'] = books['genres'].apply(lambda g: eval(g) if isinstance(g, str) else g)
+    books['new_genres'] = books['new_genres'].apply(lambda g: eval(g) if isinstance(g, str) else g)
     users['generi_preferiti'] = users['generi_preferiti'].apply(lambda g: eval(g) if isinstance(g, str) else g)
 
     all_simulations = []
