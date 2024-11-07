@@ -24,12 +24,12 @@ def assign_random_genres():
 
     # Cancella i generi preferiti esistenti e assegna 3 generi casuali dalla lista top_50
     df_users['generi_preferiti'] = df_users['generi_preferiti'].apply(assign_random_preferred_genres)
-
+    new_df = df_users[['id', 'age', 'generi_preferiti']]
     # Salva il DataFrame degli utenti aggiornato
     with open('PICKLE/df_user.pkl', 'wb') as file:
-        pickle.dump(df_users, file)
+        pickle.dump(new_df, file)
     with open('CSV/users.csv', 'wb') as file:
-        df_users.to_csv(file)
+        new_df.to_csv(file)
     
 
 

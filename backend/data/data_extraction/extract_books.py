@@ -2,28 +2,24 @@ import pandas as pd
 import pickle
 import ast
 def extract_userbook():
+    """
     df = pd.read_csv('CSV/libri_def.csv',usecols=['bookId', 'title', 'series', 'author', 'description', 'language','publishDate', 'genres', 'pages', 'awards', 'rating', 'price','new_genres'])
     df['genres'] = df['genres'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
     df['new_genres'] = df['new_genres'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
 
-  
+    df2 = pd.read_csv('CSV/filtered_data.csv',usecols=['bookId', 'title', 'series', 'author', 'description', 'language','publishDate', 'genres', 'pages', 'awards', 'rating', 'price','new_genres'])
+    df2['genres'] = df2['genres'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+    df2['new_genres'] = df2['new_genres'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+    merged_df = pd.concat([df, df2]).drop_duplicates(subset='bookId').reset_index(drop=True)
+    """
+    df = pd.read_csv('CSV/books_def.csv',usecols=['bookId', 'title', 'series', 'author', 'description', 'language','publishDate', 'genres', 'pages', 'awards', 'rating', 'price','new_genres'])
+    df['genres'] = df['genres'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+    df['new_genres'] = df['new_genres'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
 
-    columns_to_check = ['bookId', 'title', 'series', 'author', 'description', 
-                    'language', 'publishDate', 'genres', 'pages', 
-                    'awards', 'rating', 'price','new_genres']
 
-    # Filtra solo i libri in lingua inglese
-    df_filtered = df[df['language'] == 'English']
-
-    # Rimuovi le righe con valori NaN nelle colonne specificate
-    df_filtered = df_filtered.dropna(subset=columns_to_check)
-
-    # Rimuovi le righe con stringhe vuote nelle colonne specificate
-    for column in columns_to_check:
-        df_filtered = df_filtered[df_filtered[column] != '']
-
+    print(len(df))
     with open('PICKLE/df_book.pkl', 'wb') as file:
-        pickle.dump(df_filtered, file)
+        pickle.dump(df, file)  
 
 
 
