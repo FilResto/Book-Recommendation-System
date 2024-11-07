@@ -142,12 +142,14 @@ def aggiorna_dati(user_id, book_id, rating, df_visualizzazion, df_ratings):
 def setup():
     Q_table= {}
     df_books,df_ratings,df_visualization,df_users = load_data()
-    num_episodes =1000
+    num_episodes =10000
     alpha = 0.1
     gamma = 0.9
-    epsilon = 0.1
+    epsilon = 1
+    epsilon_min = 0.1
+    epsilon_decay = 0.99
     available_books = get_book_actions(df_books)
-    train_Q_learning(num_episodes,alpha,gamma,epsilon,available_books,df_users,df_visualization,df_ratings,Q_table)
+    train_Q_learning(num_episodes,alpha,gamma,epsilon,epsilon_min,epsilon_decay,available_books,df_users,df_visualization,df_ratings,Q_table)
 
 
 def update_Q(Q_table, state, action, reward, next_state, alpha, gamma,available_books):
@@ -167,7 +169,7 @@ def epsilon_greedy_policy(Q_table, state, epsilon,available_books):
     else:
         return max(Q_table[state], key=Q_table[state].get)  # Sfrutta
     
-def train_Q_learning(num_episodes, alpha, gamma, epsilon, available_books, df_utenti, df_visual, df_ratings, Q_table):
+def train_Q_learning(num_episodes, alpha, gamma, epsilon,epsilon_min, epsilon_decay, available_books, df_utenti, df_visual, df_ratings, Q_table):
     for episode in range(num_episodes):
         for user_id in df_utenti['id']:
             # Ottieni lo stato iniziale dell'utente
@@ -184,6 +186,8 @@ def train_Q_learning(num_episodes, alpha, gamma, epsilon, available_books, df_ut
             df_visual, df_ratings = aggiorna_dati(user_id, action, rating, df_visual, df_ratings)
             next_state = str(get_user_state(user_id, df_utenti, df_visual, df_ratings, available_books)) 
             update_Q(Q_table, state, action, reward, next_state, alpha, gamma, available_books)
+
+        epsilon = max(epsilon_min, epsilon *epsilon_decay)
 
         # Puoi stampare l'avanzamento per il debug
         if episode % 100 == 0:
