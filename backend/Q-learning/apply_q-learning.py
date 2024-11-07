@@ -17,8 +17,8 @@ def recommend_book(user_id, Q_table, df_utenti, df_visual, df_ratings, available
 def main():
     df_books,df_ratings,df_visualization,df_users = load_data()
     with open("../model/Q_learning.pkl", "rb") as f:
-        Q_table = pickle.load(f)
-    print("ci sono")
+        Q_table = pickle.load(f) 
+    recommend_book(Q_table,df_users,df_visualization,df_ratings,df_books,user_id=1)
 
 if __name__ == "__main__":
     main()
