@@ -50,18 +50,19 @@ def simualate_valuation(df_users, df_books, user_id, book_id):
     book = df_books.loc[df_books['bookId'] == book_id]
 
     # Riduci la base di rating per rendere più probabili i voti bassi
-    base_rating = book['rating'].iloc[0] - 1  # Abbassato per aumentare i voti bassi
+    base_rating = book['rating'].iloc[0] -1 # Abbassato per aumentare i voti bassi
 
     user_genres = (user['generi_preferiti'].iloc[0])
     book_genres = (book['new_genres'].iloc[0])
     
     # Aumenta la variabilità per generare più voti estremi
-    if set(user_genres).intersection(book_genres):
-        rating = np.random.normal(loc=base_rating + 0.75, scale=0.75)  # Maggiore deviazione standard
-        incrementa_pref()
+    if len(set(user_genres).intersection(book_genres))==2:
+        rating = np.random.normal(loc=base_rating + 1.5 , scale=0.75)
+    elif len(set(user_genres).intersection(book_genres))==1:
+        rating = np.random.normal(loc=base_rating + 1 , scale=0.75)
     else:
-        rating = np.random.normal(loc=base_rating - 1.5, scale=1)  # Maggiore deviazione standard
-        incrementa_npref()
+        rating = np.random.normal(loc=base_rating - 1.5 , scale=1)
+
 
     # Restituisci un voto assicurando che non scenda sotto 1
     return int(min(max(round(rating), 1), 5))
