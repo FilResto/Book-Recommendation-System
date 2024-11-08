@@ -3,7 +3,8 @@ import pandas as pd
 import numpy as np
 import random
 from collections import Counter
-import datetime
+from datetime import datetime
+import time
 
 
 # 1. Funzione per caricare i dati
@@ -43,7 +44,7 @@ def simualate_valuation(df_users,df_books,df_valuation,user_id, book_id):
     book = df_books.loc[df_books['bookId'] == book_id]
 
     base_rating = book['rating'].iloc[0] -1
-    
+
     user_genres = user['generi_preferiti'].iloc[0]
     book_genres = book['new_genres'].iloc[0]
     avg_rating_user = df_valuation.loc[df_valuation['userId'] == user_id, 'rating'].mean()
@@ -80,7 +81,7 @@ def get_user_state(user_id, df_user, df_visualizzazioni, df_ratings, df_book, nu
     # Ottieni gli ultimi libri visualizzati dall'utente
     recent_visualizzazioni = (
         df_visualizzazioni[df_visualizzazioni['userId'] == user_id]
-        .sort_values(by='date', ascending=False)
+        .sort_values(by='reading_date', ascending=False)
         .head(num_recent)
     )
     recent_books = recent_visualizzazioni['bookId'].tolist()
@@ -89,7 +90,7 @@ def get_user_state(user_id, df_user, df_visualizzazioni, df_ratings, df_book, nu
     generi_count = Counter()
     for book_id in recent_books:
         # Trova il libro nel DataFrame dei libri
-        book_info = df_book[df_book['id'] == book_id].iloc[0]
+        book_info = df_book[df_book['bookId'] == book_id].iloc[0]
         # Supponiamo che i generi siano in una lista nella colonna 'new_genres'
         for genere in book_info['new_genres']:
             generi_count[genere] += 1
@@ -114,10 +115,10 @@ def get_user_state(user_id, df_user, df_visualizzazioni, df_ratings, df_book, nu
     user_state = {
         "age": age,
         "generi_preferiti": generi_preferiti,
-        "recent_genre": recent_genre,
-        "severity":severity
+        "severity":severity,
+        "recent_genre":recent_genre
     }
-    
+
     return user_state
 def aggiorna_dati(user_id, book_id, rating, df_visualizzazion, df_ratings):
     # Aggiungi una nuova visualizzazione per l'utente e il libro con la data corrente
@@ -125,7 +126,7 @@ def aggiorna_dati(user_id, book_id, rating, df_visualizzazion, df_ratings):
         df_visualizzazion,
         pd.DataFrame({"userId": [user_id], "bookId": [book_id], "date": [datetime.now()]})
     ], ignore_index=True)
-    
+
     # Aggiungi o aggiorna la valutazione dell'utente per il libro
     if ((df_ratings["userId"] == user_id) & (df_ratings["bookId"] == book_id)).any():
         # Aggiorna la valutazione esistente
@@ -136,20 +137,20 @@ def aggiorna_dati(user_id, book_id, rating, df_visualizzazion, df_ratings):
             df_ratings,
             pd.DataFrame({"userId": [user_id], "bookId": [book_id], "rating": [rating]})
         ], ignore_index=True)
-    
+
     return df_visualizzazion, df_ratings
 
 def setup():
     Q_table= {}
     df_books,df_ratings,df_visualization,df_users = load_data()
-    num_episodes =10000
+    num_episodes =20000
     alpha = 0.1
     gamma = 0.9
     epsilon = 1
     epsilon_min = 0.1
     epsilon_decay = 0.99
     available_books = get_book_actions(df_books)
-    train_Q_learning(num_episodes,alpha,gamma,epsilon,epsilon_min,epsilon_decay,available_books,df_users,df_visualization,df_ratings,Q_table)
+    train_Q_learning(num_episodes,alpha,gamma,epsilon,epsilon_min,epsilon_decay,available_books,df_books,df_users,df_visualization,df_ratings,Q_table)
 
 
 def update_Q(Q_table, state, action, reward, next_state, alpha, gamma,available_books):
@@ -163,37 +164,49 @@ def update_Q(Q_table, state, action, reward, next_state, alpha, gamma,available_
 def epsilon_greedy_policy(Q_table, state, epsilon,available_books):
     if state not in Q_table:
         Q_table[state] = {a: 0 for a in available_books}
-
     if random.uniform(0, 1) < epsilon:
         return random.choice(available_books)  # Esplora
     else:
         return max(Q_table[state], key=Q_table[state].get)  # Sfrutta
-    
-def train_Q_learning(num_episodes, alpha, gamma, epsilon,epsilon_min, epsilon_decay, available_books, df_utenti, df_visual, df_ratings, Q_table):
+
+def train_Q_learning(num_episodes, alpha, gamma, epsilon,epsilon_min, epsilon_decay, available_books,df_books, df_utenti, df_visual, df_ratings, Q_table):
     for episode in range(num_episodes):
+        start_time = time.time()
         for user_id in df_utenti['id']:
             # Ottieni lo stato iniziale dell'utente
-            state = str(get_user_state(user_id, df_utenti, df_visual, df_ratings, available_books))
 
+            state = str(get_user_state(user_id, df_utenti, df_visual, df_ratings, df_books))
             # Scegli un'azione (libro) basata sulla politica epsilon-greedy
             action = epsilon_greedy_policy(Q_table, state, epsilon, available_books)
 
             # Simula la valutazione dell'utente (da migliorare con feedback reale)
-            rating = simualate_valuation(df_utenti, available_books, df_ratings, user_id, action)
+            rating = simualate_valuation(df_utenti, df_books, df_ratings, user_id, action)
             reward = get_reward(rating)
 
             # Aggiorna Q-table
             df_visual, df_ratings = aggiorna_dati(user_id, action, rating, df_visual, df_ratings)
-            next_state = str(get_user_state(user_id, df_utenti, df_visual, df_ratings, available_books)) 
+            next_state = str(get_user_state(user_id, df_utenti, df_visual, df_ratings, df_books))
             update_Q(Q_table, state, action, reward, next_state, alpha, gamma, available_books)
 
         epsilon = max(epsilon_min, epsilon *epsilon_decay)
 
         # Puoi stampare l'avanzamento per il debug
         if episode % 100 == 0:
+            print(time.time()-start_time)
             print(f"Episode {episode} completed.")
-    
+        if episode % 1000 == 0 and episode != 0:
+            with open("../model/qlearning{episode}.pkl", "wb") as f:
+                pickle.dump(Q_table, f)
+            print("Q-table saved successfully.")
+
     # Salva la Q-table alla fine dell'addestramento
-    with open("Q_table.pkl", "wb") as f:
+    with open("../model/qlearning.pkl", "wb") as f:
         pickle.dump(Q_table, f)
     print("Q-table saved successfully.")
+
+def main():
+  setup()
+
+if __name__ == "__main__":
+    main()
+
