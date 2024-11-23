@@ -68,7 +68,7 @@ def get_top_recommendations_for_user(similarity_series, top_n=2):
     return list(top_books.index)
 
 # Funzione principale per eseguire tutto
-def main(user_id=None):
+def cbf(user_id=None):
     # Carica i dati
     df_book, df_users, df_visualizations = load_data()
     
@@ -99,4 +99,4 @@ def main(user_id=None):
 
 # Esegui il programma
 if __name__ == "__main__":
-    main(user_id = 56)
+    cbf(user_id = 56)
