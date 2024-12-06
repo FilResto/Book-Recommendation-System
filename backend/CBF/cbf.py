@@ -18,11 +18,11 @@ def load_data():
 # 2. Funzione per creare il profilo dei libri basato sui generi
 def create_book_profiles(df_book):
     # Convert genres column to list format
-    df_book['genres'] = df_book['genres'].apply(lambda x: eval(x) if isinstance(x, str) else [])
     mlb = MultiLabelBinarizer()
-    books_genres_encoded = mlb.fit_transform(df_book['genres'])
+    books_genres_encoded = mlb.fit_transform(df_book['new_genres'])
     books_genres_df = pd.DataFrame(books_genres_encoded, columns=mlb.classes_)
     books_with_genres_profile = pd.concat([df_book[['bookId', 'title']], books_genres_df], axis=1)
+    #print(books_with_genres_profile)
     return books_with_genres_profile, mlb
 
 # 3. Funzione per creare il profilo degli utenti basato sui generi preferiti
@@ -36,8 +36,8 @@ def create_user_profile(df_users, mlb, user_id):
         return None
     
     # Trasforma i generi preferiti in formato lista utilizzando .loc per evitare il warning
-    user_data.loc[:, 'generi_preferiti'] = user_data['generi_preferiti'].apply(lambda x: eval(x) if isinstance(x, str) else [])
-    
+    #user_data.loc[:, 'generi_preferiti'] = user_data['generi_preferiti'].apply(lambda x: eval(x) if isinstance(x, str) else [])
+    #print(user_data["generi_preferiti"])
     # Codifica i generi preferiti dell'utente
     user_genres_encoded = mlb.transform(user_data['generi_preferiti'])
     user_profile = pd.DataFrame(user_genres_encoded, columns=mlb.classes_)
@@ -68,7 +68,7 @@ def get_top_recommendations_for_user(similarity_series, top_n=2):
     return list(top_books.index)
 
 # Funzione principale per eseguire tutto
-def main(user_id=None):
+def cbf(user_id=None):
     # Carica i dati
     df_book, df_users, df_visualizations = load_data()
     
@@ -99,4 +99,4 @@ def main(user_id=None):
 
 # Esegui il programma
 if __name__ == "__main__":
-    main(user_id = 8)
+    cbf(user_id = 56)

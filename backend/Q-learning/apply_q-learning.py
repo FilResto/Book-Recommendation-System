@@ -21,7 +21,8 @@ def main():
     df_books,df_ratings,df_visualization,df_users = load_data()
     with open("../model/qlearning.pkl", "rb") as f:
         Q_table = pickle.load(f) 
-    recommend_book(5,Q_table,df_users,df_visualization,df_ratings,df_books)
+    print(len(Q_table))
+    recommend_book(87,Q_table,df_users,df_visualization,df_ratings,df_books)
 
 if __name__ == "__main__":
     main()

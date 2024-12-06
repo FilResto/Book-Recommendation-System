@@ -6,6 +6,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 def load_data():
     with open('../data/PICKLE/df_book.pkl', 'rb') as file:
         df_book = pickle.load(file)
+        print(df_book)
     with open("../data/PICKLE/df_visualization.pkl", "rb") as file:
         df_visualizations = pickle.load(file)
     with open("../data/PICKLE/df_ratings.pkl", "rb") as file:
@@ -61,7 +62,7 @@ def get_item_based_recommendations(user_id, item_user_matrix, item_similarity_df
     return recommended_books
 
 # Funzione principale
-def main(user_id=None):
+def cfi(user_id=None):
     # Carica i dati
     df_book, df_ratings, df_visualizations = load_data()
     
@@ -79,4 +80,4 @@ def main(user_id=None):
         print("Please provide a valid user_id.")
 # Esegui il programma
 if __name__ == "__main__":
-    main(user_id=12)
+    cfi(user_id=12)
