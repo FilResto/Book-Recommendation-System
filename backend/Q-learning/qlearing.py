@@ -124,7 +124,7 @@ def aggiorna_dati(user_id, book_id, rating, df_visualizzazion, df_ratings):
     # Aggiungi una nuova visualizzazione per l'utente e il libro con la data corrente
     df_visualizzazion = pd.concat([
         df_visualizzazion,
-        pd.DataFrame({"userId": [user_id], "bookId": [book_id], "date": [datetime.now()]})
+        pd.DataFrame({"userId": [user_id], "bookId": [book_id], "reading_date": [datetime.now()]})
     ], ignore_index=True)
 
     # Aggiungi o aggiorna la valutazione dell'utente per il libro
