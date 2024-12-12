@@ -2,10 +2,10 @@ import numpy as np
 import random
 from collections import Counter
 import pandas as pd
-import datetime
+from datetime import datetime
 
 class Environment:
-    def __init__(self, users_df, books_df,visualization_df,ratings_df):
+    def __init__(self, users_df, books_df,visualization_df,ratings_df,max_steps=10, patience=3):
         """
         Inizializza l'ambiente.
         :param users_df: DataFrame degli utenti.
@@ -17,6 +17,10 @@ class Environment:
         self.ratings_df = ratings_df
         self.state = None
         self.current_user = None
+        self.max_steps = max_steps
+        self.patience = patience
+        self.current_step = 0
+        self.no_feedback_steps = 0
 
     def get_reward(self,given_valuation):
         if(given_valuation == 5):
@@ -41,10 +45,9 @@ class Environment:
             age = "adult"
         else:
             age = "old"
-
         #RECENT GENRE CALCULATION
         recent_visualizzazioni = (
-        self.visualization_df[self.visualization_df['userId'] == self.current_user["userId"]]
+        self.visualization_df[self.visualization_df["userId"] == self.current_user["id"]]
         .sort_values(by='reading_date', ascending=False)
         .head(5)
     )
@@ -65,7 +68,7 @@ class Environment:
         else:
             recent_genre = None  # Nessun libro visualizzato di recente
 
-        avg_rating_user = self.ratings_df.loc[self.ratings_df['userId'] == self.current_user["userId"], 'rating'].mean()
+        avg_rating_user = self.ratings_df.loc[self.ratings_df['userId'] == self.current_user["id"], 'rating'].mean()
         if avg_rating_user<=2:
             severity = "high"
         elif avg_rating_user>2 and avg_rating_user<= 3.5:
@@ -88,7 +91,8 @@ class Environment:
         :return: Stato iniziale.
         """
         # Seleziona un utente casuale dal DataFrame.
-        
+        self.current_step = 0
+        self.no_feedback_steps = 0
         self.current_user = self.users_df.sample().iloc[0]
         self.state = self.caluclate_state()
         return self.encode_state()
@@ -97,7 +101,7 @@ class Environment:
     # Aggiungi una nuova visualizzazione per l'utente e il libro con la data corrente
         self.visualization_df = pd.concat([
         self.visualization_df,
-        pd.DataFrame({"userId": [self.current_user["id"]], "bookId": [book_id], "reading_date": [datetime.now()]})
+        pd.DataFrame({"userId": [self.current_user["id"]], "bookId": [book_id], "reading_date": [datetime.now().strftime("%Y-%m-%d")]})
     ], ignore_index=True)
 
         # Aggiungi o aggiorna la valutazione dell'utente per il libro
@@ -121,20 +125,29 @@ class Environment:
         :return: Nuovo stato, ricompensa, flag done.
         """
         # Recupera il libro consigliato dall'azione (indice del DataFrame).
-        recommended_book = self.books_df[self.books_df["bookId"] == action].iloc[0]
-
+        recommended_book = self.books_df.iloc[action]
+        book_id = recommended_book["bookId"]
         # Simula il feedback dell'utente.
-        if not self.visualization_df[self.visualization_df["bookId"] == action].empty:
-            valuation = self.simulate_user_feedback(recommended_book)
+        if not self.visualization_df[self.visualization_df["bookId"] == book_id].empty:
+            self.current_step += 1
+            valuation = self.simulate_user_feedback(book_id)
             reward = self.get_reward(valuation)
-            self.aggiorna_dati()
+            self.aggiorna_dati(book_id,valuation)
         else:
-            reward = -10
+            reward = -5
+
+        if reward < 1:  # Soglia per feedback negativo
+            self.no_feedback_steps += 1
+        else:
+            self.no_feedback_steps = 0
         # Aggiorna lo stato (es. il genere recente diventa il genere del libro consigliato).
         self.state = self.caluclate_state()
 
         # Determina se l'episodio è terminato (può essere basato su un criterio come il numero di raccomandazioni).
-        done = False  # Può essere cambiato se hai un limite di iterazioni.
+        done = (
+            self.current_step >= self.max_steps or 
+            self.no_feedback_steps >= self.patience
+        )
 
         return self.encode_state(), reward, done
     
@@ -155,7 +168,7 @@ class Environment:
         base_rating = book['rating'].iloc[0] -1
         user_genres = user['generi_preferiti']
         book_genres = book['new_genres'].iloc[0]
-        avg_rating_user = self.visualization_df.loc[self.visualization_df['userId'] == self.current_user["id"], 'rating'].mean()
+        avg_rating_user = self.ratings_df.loc[self.ratings_df['userId'] == self.current_user["id"], 'rating'].mean()
         user_severity = self.calculate_severity_deficit(avg_rating_user)
 
         if len(set(user_genres).intersection(book_genres))==2:
@@ -180,6 +193,7 @@ class Environment:
         severity_encoded = np.eye(3)[severity_mapping[self.state["severity"]]]
 
         # Codifica i generi preferiti come una media delle categorie disponibili.
+        self.books_df["new_genres"] = self.books_df["new_genres"].apply(tuple)
         all_genres = self.books_df["new_genres"].unique()
         genre_encoded = np.zeros(len(all_genres))
         for genre in self.state["preferred_genres"]:
