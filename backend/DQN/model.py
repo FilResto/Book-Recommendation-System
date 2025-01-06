@@ -12,9 +12,11 @@ class DQN(nn.Module):
         """
         super(DQN, self).__init__()
         self.network = nn.Sequential(
-            nn.Linear(input_dim, 128),
+            nn.Linear(input_dim, 512),
             nn.ReLU(),
-            nn.Linear(128, 128),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
             nn.ReLU(),
             nn.Linear(128, output_dim)
             
@@ -30,7 +32,7 @@ class DQN(nn.Module):
         return self.network(x)
 
 class DQNAgent:
-    def __init__(self, input_dim, output_dim, lr=1e-3, gamma=0.99, target_update=10, model_path="dqn_model.pth"):
+    def __init__(self, input_dim, output_dim, lr=1e-5, gamma=0.99, target_update=10, model_path="dqn_model.pth"):
         """
         Inizializza l'agente DQN.
         :param input_dim: Dimensione dell'input (stato codificato).
@@ -55,6 +57,7 @@ class DQNAgent:
         self.target_update = target_update
         self.model_path = model_path
         self.steps_done = 0
+        self.losses = []  # Per monitorare la perdita
 
     def select_action(self, state, epsilon):
         """
@@ -64,12 +67,13 @@ class DQNAgent:
         :return: Indice dell'azione selezionata.
         """
         if torch.rand(1).item() < epsilon:
-            return torch.randint(0, self.policy_net.network[-1].out_features, (1,)).item()
+            #print("esplorazione")
+            return torch.randint(0, self.policy_net.network[-1].out_features, (1,)).item(),0
         else:
+            #print("sfruttamento")
             state = state.to(self.device).unsqueeze(0)
-            print(state)
             with torch.no_grad():
-                return self.policy_net(state).argmax(dim=1).item()
+                return self.policy_net(state).argmax(dim=1).item(),1
 
     def optimize(self, memory, batch_size):
         """
@@ -82,7 +86,7 @@ class DQNAgent:
 
         # Campiona esperienze casuali dal buffer
         batch = memory.sample_batch(batch_size)
-        state, action, reward, next_state, done = batch
+        state, action, reward, next_state, done, indices,weights = batch
         # Converti gli stati e gli stati successivi in tensori
         state = torch.stack([torch.tensor(s, dtype=torch.float32) for s in state]).to(self.device)
         next_state = torch.stack([torch.tensor(ns, dtype=torch.float32) for ns in next_state]).to(self.device)
@@ -102,10 +106,11 @@ class DQNAgent:
 
         # Calcola la perdita
         loss = self.loss_fn(q_values, q_target)
-
+        self.losses.append(loss.item())
         # Ottimizza la rete
         self.optimizer.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=10)
         self.optimizer.step()
 
         # Aggiorna la rete target se necessario

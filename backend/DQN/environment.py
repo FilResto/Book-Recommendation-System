@@ -21,18 +21,23 @@ class Environment:
         self.patience = patience
         self.current_step = 0
         self.no_feedback_steps = 0
+        self.recommendation_counts = {book_id: 0 for book_id in self.books_df['bookId']}
 
-    def get_reward(self,given_valuation):
+    def get_reward(self,given_valuation,book_id):
         if(given_valuation == 5):
-            reward = 4
+            reward = 8
         if(given_valuation == 4):
-            reward = 3
+            reward = 5
         if(given_valuation == 3):
             reward = 1
         if(given_valuation==2):
             reward = -3
         if(given_valuation == 1):
             reward = -5
+         # Exploration bonus
+        count = self.recommendation_counts.get(book_id, 0)
+        exploration_bonus = 1 / (np.sqrt(count + 1))  # Bonus decrescente con il numero di raccomandazioni
+        reward += exploration_bonus  # Somma il bonus alla ricompensa
         
         return reward
     def caluclate_state(self):
@@ -81,7 +86,7 @@ class Environment:
             "age": age,  # young,adult,old
             "severity": severity,  # low,medium,high
             "preferred_genres": self.current_user["generi_preferiti"],  # Lista di generi separati da virgole
-            "recent_genre": recent_genre
+            #"recent_genre": recent_genre
         }
         return state
 
@@ -95,6 +100,7 @@ class Environment:
         self.no_feedback_steps = 0
         self.current_user = self.users_df.sample().iloc[0]
         self.state = self.caluclate_state()
+        #print(self.state)
         return self.encode_state()
 
     def aggiorna_dati(self, book_id, rating):
@@ -127,14 +133,16 @@ class Environment:
         # Recupera il libro consigliato dall'azione (indice del DataFrame).
         recommended_book = self.books_df.iloc[action]
         book_id = recommended_book["bookId"]
+        self.recommendation_counts[book_id] += 1
         # Simula il feedback dell'utente.
-        if not self.visualization_df[self.visualization_df["bookId"] == book_id].empty:
-            self.current_step += 1
-            valuation = self.simulate_user_feedback(book_id)
-            reward = self.get_reward(valuation)
-            self.aggiorna_dati(book_id,valuation)
-        else:
-            reward = -5
+        #if not self.visualization_df[self.visualization_df["bookId"] == book_id].empty:
+        self.current_step += 1
+        valuation = self.simulate_user_feedback(book_id)
+        reward = self.get_reward(valuation,book_id)
+        self.aggiorna_dati(book_id,valuation)
+        #else:
+            #print("entrato")
+            #reward = -5
 
         if reward < 1:  # Soglia per feedback negativo
             self.no_feedback_steps += 1
@@ -148,7 +156,7 @@ class Environment:
             self.current_step >= self.max_steps or 
             self.no_feedback_steps >= self.patience
         )
-
+        #print(self.state)
         return self.encode_state(), reward, done
     
     def calculate_severity_deficit(severity,avg_val):
@@ -164,20 +172,23 @@ class Environment:
         """
         user = self.current_user
         book = self.books_df.loc[self.books_df['bookId'] == bookid]
-
-        base_rating = book['rating'].iloc[0] -1
+        #print(bookid)
+        base_rating = book['rating'].iloc[0]
         user_genres = user['generi_preferiti']
         book_genres = book['new_genres'].iloc[0]
+        #print(book_genres,base_rating)
         avg_rating_user = self.ratings_df.loc[self.ratings_df['userId'] == self.current_user["id"], 'rating'].mean()
         user_severity = self.calculate_severity_deficit(avg_rating_user)
 
         if len(set(user_genres).intersection(book_genres))==2:
-            rating = np.random.normal(loc=base_rating + 1.5 + user_severity, scale=0.75)
+            #print("\n\n\n sono entrato qui2 \n\n\n")
+            rating = np.random.normal(loc=base_rating + 1 + user_severity, scale=0.1)
         elif len(set(user_genres).intersection(book_genres))==1:
-            rating = np.random.normal(loc=base_rating + 1 + user_severity, scale=0.75)
+            rating = np.random.normal(loc=base_rating  + user_severity+ 0.5, scale=0.3)
+            #print("\n\n\n sono entrato qui\n\n\n")
         else:
-            rating = np.random.normal(loc=base_rating - 1.5 + user_severity, scale=1)
-
+            rating = np.random.normal(loc=base_rating - 1 + user_severity, scale=0.5)
+        #print(rating)
         return int(min(max(round(rating), 1), 5))
 
     def encode_state(self):
@@ -185,27 +196,29 @@ class Environment:
         Converte lo stato in una rappresentazione numerica (es. one-hot encoding).
         :return: Stato codificato.
         """
-        age_mapping = {"young": 0, "adult": 1, "old": 2}
+        #age_mapping = {"young": 0, "adult": 1, "old": 2}
         severity_mapping = {"low": 0, "medium": 1, "high": 2}
 
         # One-hot encoding per età e severità.
-        age_encoded = np.eye(3)[age_mapping[self.state["age"]]]
+        #age_encoded = np.eye(3)[age_mapping[self.state["age"]]]
         severity_encoded = np.eye(3)[severity_mapping[self.state["severity"]]]
 
-        # Codifica i generi preferiti come una media delle categorie disponibili.
-        self.books_df["new_genres"] = self.books_df["new_genres"].apply(tuple)
-        all_genres = self.books_df["new_genres"].unique()
-        genre_encoded = np.zeros(len(all_genres))
+        all_genres = set(genre for genres in self.books_df["new_genres"] for genre in genres)
+        all_genres = sorted(all_genres)  # Ordine deterministico
+        genre_to_index = {genre: idx for idx, genre in enumerate(all_genres)}
+        # Codifica i generi come un array binario
+        fav_genre_encoded = np.zeros(len(all_genres))
         for genre in self.state["preferred_genres"]:
-            if genre in all_genres:
-                genre_index = np.where(all_genres == genre)[0][0]
-                genre_encoded[genre_index] = 1
+            genre_index = genre_to_index[genre]
+            fav_genre_encoded[genre_index] = 1
 
         # Codifica il genere recente.
-        recent_genre_encoded = np.zeros(len(all_genres))
-        if self.state["recent_genre"] in all_genres:
-            genre_index = np.where(all_genres == self.state["recent_genre"])[0][0]
-            recent_genre_encoded[genre_index] = 1
+        #recent_genre_encoded = np.zeros(len(all_genres))
+        #if self.state["recent_genre"] in all_genres:
+        #    genre_index = np.where(all_genres == self.state["recent_genre"])[0][0]
+        #    recent_genre_encoded[genre_index] = 1
 
         # Concatenazione finale dello stato codificato.
-        return np.concatenate([age_encoded, severity_encoded, genre_encoded, recent_genre_encoded])
+        #return np.concatenate([age_encoded, severity_encoded, genre_encoded, recent_genre_encoded])
+        #return np.concatenate([age_encoded, severity_encoded, fav_genre_encoded])
+        return np.concatenate([severity_encoded, fav_genre_encoded])
