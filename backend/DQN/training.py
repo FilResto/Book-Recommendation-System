@@ -8,7 +8,7 @@ from model import DQNAgent
 from environment import Environment
 from replay_buffer import PrioritizedReplayBuffer
 import torch.nn as nn
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 def train_dqn(agent, environment, num_episodes=50000, batch_size=64, epsilon_start=1.0, epsilon_end=0.1, epsilon_decay=25000, target_update=100):
     """
