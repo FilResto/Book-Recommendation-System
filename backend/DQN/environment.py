@@ -23,17 +23,36 @@ class Environment:
         self.no_feedback_steps = 0
         self.recommendation_counts = {book_id: 0 for book_id in self.books_df['bookId']}
 
-    def get_reward(self,given_valuation,book_id):
+    def user_recom(self,user_id):
+        u = {}
+        user = self.users_df[self.users_df["id"] == user_id].iloc[0]
+        u["age"] = user["age"]
+        u["id"] = user["id"]
+        u["generi_preferiti"] = user["generi_preferiti"]
+        self.current_user = u
+        self.state = self.caluclate_state()
+        
+        
+        return self.encode_state()
+
+    def get_reward(self,given_valuation,book_id,genre_recomendation):
+        reward = 0
+        if genre_recomendation == 2:
+            reward += 80
+        if genre_recomendation == 1:
+            reward += 40
+        if genre_recomendation == 0:
+            reward += -10
         if(given_valuation == 5):
-            reward = 8
+            reward += 5
         if(given_valuation == 4):
-            reward = 5
+            reward += 3
         if(given_valuation == 3):
-            reward = 1
+            reward += 1
         if(given_valuation==2):
-            reward = -3
+            reward += -3
         if(given_valuation == 1):
-            reward = -5
+            reward += -5
          # Exploration bonus
         count = self.recommendation_counts.get(book_id, 0)
         exploration_bonus = 1 / (np.sqrt(count + 1))  # Bonus decrescente con il numero di raccomandazioni
@@ -43,7 +62,9 @@ class Environment:
     def caluclate_state(self):
     
         #AGE CALCULATION
-        age = self.current_user['age']
+        
+        age = int(self.current_user['age'])
+        #age = self.current_user['age']
         if age<25:
             age = "young"
         elif age>= 25 and age <=55:
@@ -137,8 +158,8 @@ class Environment:
         # Simula il feedback dell'utente.
         #if not self.visualization_df[self.visualization_df["bookId"] == book_id].empty:
         self.current_step += 1
-        valuation = self.simulate_user_feedback(book_id)
-        reward = self.get_reward(valuation,book_id)
+        valuation,genre_recomandation = self.simulate_user_feedback(book_id)
+        reward = self.get_reward(valuation,book_id,genre_recomandation)
         self.aggiorna_dati(book_id,valuation)
         #else:
             #print("entrato")
@@ -179,17 +200,19 @@ class Environment:
         #print(book_genres,base_rating)
         avg_rating_user = self.ratings_df.loc[self.ratings_df['userId'] == self.current_user["id"], 'rating'].mean()
         user_severity = self.calculate_severity_deficit(avg_rating_user)
-
+        genre_recomendation = 0
         if len(set(user_genres).intersection(book_genres))==2:
             #print("\n\n\n sono entrato qui2 \n\n\n")
-            rating = np.random.normal(loc=base_rating + 1 + user_severity, scale=0.1)
+            rating = np.random.normal(loc=base_rating + 0.75 + user_severity, scale=0.1)
+            genre_recomendation = 2
         elif len(set(user_genres).intersection(book_genres))==1:
             rating = np.random.normal(loc=base_rating  + user_severity+ 0.5, scale=0.3)
+            genre_recomendation = 1
             #print("\n\n\n sono entrato qui\n\n\n")
         else:
-            rating = np.random.normal(loc=base_rating - 1 + user_severity, scale=0.5)
+            rating = np.random.normal(loc=base_rating - 0.3 + user_severity, scale=0.5)
         #print(rating)
-        return int(min(max(round(rating), 1), 5))
+        return int(min(max(round(rating), 1), 5)),genre_recomendation
 
     def encode_state(self):
         """

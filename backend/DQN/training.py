@@ -10,7 +10,7 @@ from replay_buffer import PrioritizedReplayBuffer
 import torch.nn as nn
 import matplotlib.pyplot as plt
 
-def train_dqn(agent, environment, num_episodes=10000, batch_size=64, epsilon_start=1.0, epsilon_end=0.2, epsilon_decay=400, target_update=10):
+def train_dqn(agent, environment, num_episodes=50000, batch_size=64, epsilon_start=1.0, epsilon_end=0.1, epsilon_decay=25000, target_update=100):
     """
     Addestra un agente DQN nell'ambiente specificato.
     :param agent: L'agente DQN.
@@ -26,7 +26,7 @@ def train_dqn(agent, environment, num_episodes=10000, batch_size=64, epsilon_sta
     k = math.log(epsilon_start / epsilon_end) / epsilon_decay
 
     # Replay buffer
-    memory = PrioritizedReplayBuffer(capacity=100000)
+    memory = PrioritizedReplayBuffer(capacity=1000000)
 
     # Lista per tracciare la ricompensa media per ogni episodio
     rewards = []
@@ -40,7 +40,8 @@ def train_dqn(agent, environment, num_episodes=10000, batch_size=64, epsilon_sta
         state = torch.tensor(state, dtype=torch.float32, device=agent.policy_net.network[0].weight.device)  # Usa il device del modello
         steps = 0
         total_reward = 0
-        
+        opt_rew_sfrutto = 0
+        opt_rew_esploro = 0
         done = False
         print(f"\n--- Episode {episode} ---") if episode < 10 else None
 
@@ -56,6 +57,12 @@ def train_dqn(agent, environment, num_episodes=10000, batch_size=64, epsilon_sta
               #print("Reward sfruttamento:",reward)
               tot_sfruttamento += reward
               num_sfrut += 1
+              if reward > 30:
+                opt_rew_sfrutto += 1
+            else:
+              if reward >30:
+                opt_rew_esploro += 1
+
             if episode < 10:  # Log solo per i primi 10 episodi
                 print(f"Step {steps}: State={state}, Action={action}, Reward={reward}, Next State={next_state}, Done={done}\n\n")
 
@@ -87,10 +94,12 @@ def train_dqn(agent, environment, num_episodes=10000, batch_size=64, epsilon_sta
             agent.save_model()
             if num_sfrut == 0:
               num_sfrut = 1
-            print(f"Episode {episode}/{num_episodes}, Total Reward: {total_reward}, Epsilon: {epsilon:.2f}, Media Sfruttamento: {tot_sfruttamento/num_sfrut}, Sfruttamenti: {num_sfrut}/{tot_try}")
+            print(f"Episode {episode}/{num_episodes}, Total Reward: {total_reward}, Epsilon: {epsilon:.2f}, Media Sfruttamento: {tot_sfruttamento/num_sfrut}, Sfruttamenti: {num_sfrut}/{tot_try} Ottimi Reward Sfruttamento: {opt_rew_sfrutto} Ottimi Reward Esplorazione: {opt_rew_esploro} ")
             tot_sfruttamento = 0
             num_sfrut = 0
             tot_try = 0
+            opt_rew_sfrutto = 0
+            opt_rew_esploro = 0
     return rewards
 
 
@@ -146,7 +155,7 @@ if __name__ == "__main__":
     agent.policy_net.apply(initialize_weights)
     agent.target_net.apply(initialize_weights)
     # Addestra l'agente
-    rewards = train_dqn(agent, env, num_episodes=1000, batch_size=64)
+    rewards = train_dqn(agent, env, num_episodes=50000, batch_size=64)
     plot_losses(agent)
     # Salva il modello finale
 

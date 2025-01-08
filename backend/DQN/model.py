@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import os
+import torch.nn.functional as F
 
 class DQN(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -32,7 +33,7 @@ class DQN(nn.Module):
         return self.network(x)
 
 class DQNAgent:
-    def __init__(self, input_dim, output_dim, lr=1e-5, gamma=0.99, target_update=10, model_path="dqn_model.pth"):
+    def __init__(self, input_dim, output_dim, lr=1e-5, gamma=0.99, target_update=200, model_path="dqn_model_v3.pth"):
         """
         Inizializza l'agente DQN.
         :param input_dim: Dimensione dell'input (stato codificato).
@@ -59,22 +60,29 @@ class DQNAgent:
         self.steps_done = 0
         self.losses = []  # Per monitorare la perdita
 
-    def select_action(self, state, epsilon):
+    def select_action(self, state, epsilon=0.1):
         """
-        Seleziona un'azione usando epsilon-greedy.
+        Seleziona un'azione usando softmax, con esplorazione controllata.
         :param state: Stato corrente (torch.Tensor).
         :param epsilon: Probabilità di esplorare (selezionare un'azione casuale).
         :return: Indice dell'azione selezionata.
         """
-        if torch.rand(1).item() < epsilon:
-            #print("esplorazione")
-            return torch.randint(0, self.policy_net.network[-1].out_features, (1,)).item(),0
-        else:
-            #print("sfruttamento")
-            state = state.to(self.device).unsqueeze(0)
-            with torch.no_grad():
-                return self.policy_net(state).argmax(dim=1).item(),1
+        state = state.to(self.device).unsqueeze(0)  # Aggiunge una dimensione batch
+        with torch.no_grad():
+            q_values = self.policy_net(state)  # Calcola i valori Q per tutte le azioni
 
+        # Esplorazione: seleziona casualmente un'azione con probabilità epsilon
+        if torch.rand(1).item() < epsilon:
+            action = torch.randint(0, self.policy_net.network[-1].out_features, (1,)).item()
+            return action, 0  # Restituisce azione e flag di esplorazione
+
+        # Sfruttamento: usa softmax per determinare la probabilità di ciascuna azione
+        q_values = q_values.squeeze(0)  # Rimuove la dimensione del batch
+        probs = F.softmax(q_values / 1.0, dim=0)  # Temperatura=1 per softmax
+        action = torch.multinomial(probs, 1).item()  # Campiona l'azione in base alla probabilità
+
+        return action, 1  # Restituisce azione e flag di sfruttamento
+    
     def optimize(self, memory, batch_size):
         """
         Ottimizza la rete basandosi sull'esperienza raccolta.
