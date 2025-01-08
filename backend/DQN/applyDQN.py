@@ -38,11 +38,27 @@ def recommend_book(agent, environment, user_id, device=torch.device("cpu")):
     for action in top_actions:
         book_info = environment.books_df.iloc[action]  # Ottieni info libro da df
         recommended_books.append({
-            "book_id": book_info["bookId"],
+            "book_id": book_info["bookId"]
         })
     
     return recommended_books
 
+def dqn(user_id):
+    # Carica i dati e inizializza l'ambiente
+    df_books, df_ratings, df_visualization, df_users = load_data()
+    env = Environment(df_users, df_books, df_visualization, df_ratings)
+
+    # Parametri del modello
+    input_dim = 53  # Dimensione dello stato
+    output_dim = len(df_books)  # Numero totale di libri (azioni possibili)
+
+    # Inizializza l'agente DQN
+    device = torch.device("cpu")
+    #print(f"Utilizzo del dispositivo: {device}")
+    agent = DQNAgent(input_dim, output_dim)
+    agent.load_model()  # Carica il modello addestrato
+    recommended_books = recommend_book(agent, env, user_id, device=device)
+    return recommended_books
 
 if __name__ == "__main__":
     # Carica i dati e inizializza l'ambiente
