@@ -244,4 +244,4 @@ class Environment:
         # Concatenazione finale dello stato codificato.
         #return np.concatenate([age_encoded, severity_encoded, genre_encoded, recent_genre_encoded])
         #return np.concatenate([age_encoded, severity_encoded, fav_genre_encoded])
-        return np.concatenate([severity_encoded, fav_genre_encoded])
+        return np.concatenate([ fav_genre_encoded])

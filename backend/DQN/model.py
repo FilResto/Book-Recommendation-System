@@ -33,7 +33,7 @@ class DQN(nn.Module):
         return self.network(x)
 
 class DQNAgent:
-    def __init__(self, input_dim, output_dim, lr=1e-5, gamma=0.99, target_update=200, model_path="dqn_model_v3.pth"):
+    def __init__(self, input_dim, output_dim, lr=1e-5, gamma=0.99, target_update=200, model_path="dqn_model_v6.pth"):
         """
         Inizializza l'agente DQN.
         :param input_dim: Dimensione dell'input (stato codificato).
